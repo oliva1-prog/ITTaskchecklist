@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDoS-готовность архитектуры</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Evolventa:wght@400;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #ffffff;
+            font-family: 'Evolventa', sans-serif;
+            color: #333333;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        /* Место для фото */
+        .image-placeholder {
+            width: 100%;
+            height: 250px;
+            background-color: #f5f5f5;
+            border: 2px dashed #cccccc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 40px;
+            font-size: 18px;
+            color: #999999;
+        }
+        
+        .image-placeholder img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        /* Заголовок */
+        h1 {
+            text-align: center;
+            font-size: 32px;
+            font-weight: 700;
+            color: #177CAA;
+            margin-bottom: 30px;
+        }
+        
+        /* Блок вопроса */
+        .question-block {
+            margin-bottom: 40px;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 4px;
+        }
+        
+        .question-number {
+            font-size: 14px;
+            color: #999999;
+            font-weight: 400;
+            margin-bottom: 8px;
+        }
+        
+        .question-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+        
+        /* Варианты ответов */
+        .answer-options {
+            margin-left: 20px;
+        }
+        
+        .answer-option {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            cursor: pointer;
+            padding: 12px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        .answer-option:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .answer-option input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            margin-top: 2px;
+            margin-right: 15px;
+            cursor: pointer;
+            accent-color: #177CAA;
+        }
+        
+        .answer-content {
+            flex: 1;
+        }
+        
+        .answer-label {
+            font-size: 16px;
+            color: #333333;
+            font-weight: 400;
+            line-height: 1.5;
+            margin-bottom: 5px;
+            display: none;
+        }
+        
+        .answer-description {
+            font-size: 14px;
+            color: #666666;
+            font-weight: 400;
+            line-height: 1.4;
+            margin-top: 5px;
+        }
+        
+        .red-flag {
+            background-color: #fff3f3;
+            border-left: 3px solid #E4107F;
+            padding: 10px 12px;
+            margin-top: 10px;
+            border-radius: 2px;
+        }
+        
+        .red-flag-title {
+            font-weight: 700;
+            color: #E4107F;
+            font-size: 13px;
+            display: none;
+        }
+        
+        .red-flag-text {
+            font-size: 13px;
+            color: #666666;
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+        
+        /* Кнопка подсчета */
+        .button-container {
+            text-align: center;
+            margin: 50px 0;
+        }
+        
+        .calculate-btn {
+            background-color: #177CAA;
+            color: white;
+            border: none;
+            padding: 16px 48px;
+            font-size: 18px;
+            font-weight: 700;
+            font-family: 'Evolventa', sans-serif;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .calculate-btn:hover {
+            background-color: #125a8a;
+        }
+        
+        .calculate-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        /* Результаты */
+        .results {
+            display: none;
+            margin-top: 50px;
+            padding: 30px;
+            background: linear-gradient(135deg, #f0f4f8 0%, #ffffff 100%);
+            border-left: 5px solid #E4107F;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .results.show {
+            display: block;
+        }
+        
+        .score-display {
+            font-size: 48px;
+            font-weight: 700;
+            color: #177CAA;
+            margin-bottom: 20px;
+        }
+        
+        .advice-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #E4107F;
+            margin-bottom: 15px;
+        }
+        
+        .advice-text {
+            font-size: 16px;
+            color: #333333;
+            font-weight: 400;
+            line-height: 1.6;
+            text-align: left;
+            background-color: white;
+            padding: 20px;
+            border-radius: 4px;
+            border-left: 3px solid #177CAA;
+        }
+        
+        .reset-btn {
+            background-color: #E4107F;
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            font-size: 16px;
+            font-weight: 700;
+            font-family: 'Evolventa', sans-serif;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+        
+        .reset-btn:hover {
+            background-color: #c30969;
+        }
+        
+        .error-message {
+            color: #E4107F;
+            font-weight: 700;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Место для фото -->
+        <div class="image-placeholder">
+            <img id="headerImage" style="display:none;" alt="Заголовочное изображение">
+            <span id="placeholderText">Здесь будет ваше изображение</span>
+        </div>
+        
+        <h1>Проверка DDoS-готовности архитектуры</h1>
+        
+        <form id="checklist-form">
+            <!-- Вопрос 1 -->
+            <div class="question-block">
+                <div class="question-number">Вопрос 1</div>
+                <div class="question-text">Все ли внешние точки входа действительно находятся под защитой?</div>
+                <div class="answer-options">
+                    <label class="answer-option">
+                        <input type="radio" name="q1" value="2">
+                        <div class="answer-content">
+                            <div class="answer-label">2 балла</div>
+                            <div class="answer-description">Внешний контур инвентаризирован; понятно, каким эшелоном защищается каждый публичный сервис; появление нового ресурса автоматически или процессно приводит к включению его в защиту.</div>
+                        </div>
+                    </label>
+                    <label class="answer-option">
+                        <input type="radio" name="q1" value="1">
+                        <div class="answer-content">
+                            <div class="answer-label">1 балл</div>
+                            <div class="answer-description">Основные бизнес-сервисы защищены, но нет уверенности в полноте покрытия либо отдельные API, технические домены, облачные ресурсы подключаются к защите вручную.</div>
+                        </div>
+                    </label>
+                    <label class="answer-option">
+                        <input type="radio" name="q1" value="0">
+                        <div class="answer-content">
+                            <div class="answer-label">0 баллов</div>
+                            <div class="answer-description">Фактический внешний контур неизвестен, либо защита проектировалась вокруг нескольких «главных» адресов и доменов.</div>
+                            <div class="red-flag">
+                                <div class="red-flag-title">🚩 Красный флаг:</div>
+                                <div class="red-flag-text">Во время атаки выясняется, что основной сайт защищен, но доступный извне API или альтернативный адрес ведет к той же инфраструктуре в обход этого контура.</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Вопрос 2 -->
+            <div class="question-block">
+                <div class="question-number">Вопрос 2</div>
+                <div class="question-text">Может ли атака забить канал раньше, чем ее увидят ваши средства защиты?</div>
+                <div class="answer-options">
+                    <label class="answer-option">
+                        <input type="radio" name="q2" value="2">
+                        <div class="answer-content">
+                            <div class="answer-label">2 балла</div>
+                            <div class="answer-description">Объемные L3/L4-атаки фильтруются до узкого места в канале заказчика; схема маршрутизации или перенаправления трафика понятна и проверена; известны ограничения по пропускной способности каждого участка.</div>
+                        </div>
+                    </label>
+                    <label class="answer-option">
+                        <input type="radio" name="q2" value="1">
+                        <div class="answer-content">
+                            <div class="answer-label">1 балл</div>
+                            <div class="answer-description">Внешняя фильтрация предусмотрена, но переключение не проверялось под нагрузкой либо в архитектуре остаются отдельные каналы и адреса, которые могут стать узким местом.</div>
+                        </div>
+                    </label>
+                    <label class="answer-option">
+                        <input type="radio" name="q2" value="0">
+                        <div class="answer-content">
+                            <div class="answer-label">0 баллов</div>
+                            <div class="answer-description">Основная ставка сделана на оборудование внутри площадки или на пропускную способность собственного интернет-канала.</div>
+                            <div class="red-flag">
+                                <div class="red-flag-title">🚩 Красный флаг:</div>
+                                <div class="red-flag-text">«Наш NGFW держит десятки гигабит, значит DDoS нам не страшен». Производительность устройства и способность инфраструктуры пережить объемную атаку — разные вещи.</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Вопрос 3 -->
+            <div class="question-block">
+                <div class="question-number">Вопрос 3</div>
+                <div class="question-text">Что остановит атаку, которая не забивает канал, но заставляет приложение выполнять дорогую работу?</div>
+                <div class="answer-options">
+                    <label class="answer-option">
+                        <input type="radio" name="q3" value="2">
+                        <div class="answer-content">
+                            <div class="answer-label">2 балла</div>
+                            <div class="answer-description">Защита учитывает не только количество запросов, но и их характер; известны наиболее «дорогие» операции приложения; для них определены отдельные политики, лимиты или поведенческие механизмы; известна допустимая нагрузка backend-систем.</div>
+                        </div>
+                    </label>
+                    <label class="answer-option">
+                        <input type="radio" name="q3" value="1">
+                        <div class="answer-content">
+                            <div class="answer-label">1 балл</div>
+                            <div class="answer-description">Есть WAF, rate limiting или общие ограничения, но они не привязаны к реальной стоимости отдельных операций приложения.</div>
+                        </div>
+                    </label>
+                    <label class="answer-option">
+                        <input type="radio" name="q3" value="0">
+                        <div class="answer-content">
+                            <div class="answer-label">0 баллов</div>
+                            <div class="answer-description">Считается, что L7 DDoS автоматически закрывается наличием WAF или достаточным запасом серверных ресурсов.</div>
+                            <div class="red-flag">
+                                <div class="red-flag-title">🚩 Красный флаг:</div>
+                                <div class="red-flag-text">HTTP-запрос полностью корректен с точки зрения протокола и сигнатур WAF, но тысяча таких запросов одновременно кладет базу данных.</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Вопрос 4 -->
+            <div class="question-block">
+                <div class="question-number">Вопрос 4</div>
+                <div class="question-text">Отличает ли ваша защита злоумышленника от обычного пользователя, если оба отправляют корректные запросы?</div>
+                <div class="answer-options">
+                    <label class="answer-option">
+                        <input type="radio" name="q4" value="2">
+                        <div class="answer-content">
+                            <div class="answer-label">2 балла</div>
+                            <div class="answer-description">Для критичных пользовательских сценариев применяется анализ автоматизации и поведения; ограничения могут учитывать не только IP, но и сессию, устройство, учетную запись и характер действий; отдельно продуманы машинные клиенты и API.</div>
+                        </div>
+                    </label>
+                    <label class="answer-option">
+                        <input type="radio" name="q4" value="1">
+                        <div class="answer-content">
+                            <div class="answer-label">1 балл</div>
+                            <div class="answer-description">Применяются CAPTCHA, IP-based rate limiting и отдельные ограничения, но полноценного контроля автоматизированных сценариев нет.</div>
+                        </div>
+                    </label>
+                    <label class="answer-option">
+                        <input type="radio" name="q4" value="0">
+                        <div class="answer-content">
+                            <div class="answer-label">0 баллов</div>
+                            <div class="answer-description">Основная логика — блокировка известных IP и сигнатур.</div>
+                            <div class="red-flag">
+                                <div class="red-flag-title">🚩 Красный флаг:</div>
+                                <div class="red-flag-text">Один ботнет распределяет запросы между тысячами адресов, и каждый отдельный IP выглядит вполне «законопослушно».</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Вопрос 5 -->
+            <div class="question-block">
+                <div class="question-number">Вопрос 5</div>
+                <div class="question-text">Можно ли обратиться к приложению в обход защитного контура?</div>
+                <div class="answer-options">
+                    <label class="answer-option">
+                        <input type="radio" name="q5" value="2">
+                        <div class="answer-content">
+                            <div class="answer-label">2 балла</div>
+                            <div class="answer-description">Прямой доступ к origin ограничен; backend принимает внешний трафик только от доверенных элементов защитного контура; альтернативные IP, домены и технические адреса учтены; DNS также рассчитан на работу под атакой.</div>
+                        </div>
+                    </label>
+                    <label class="answer-option">
+                        <input type="radio" name="q5" value="1">
+                        <div class="answer-content">
+                            <div class="answer-label">1 балл</div>
+                            <div class="answer-description">Основная точка входа закрыта правильно, но остаются административные, интеграционные или исторические адреса, для которых схема отличается.</div>
+                        </div>
+                    </label>
+                    <label class="answer-option">
+                        <input type="radio" name="q5" value="0">
+                        <div class="answer-content">
+                            <div class="answer-label">0 баллов</div>
+                            <div class="answer-description">Origin доступен из Интернета напрямую либо его IP можно использовать, минуя облачную/внешнюю фильтрацию.</div>
+                            <div class="red-flag">
+                                <div class="red-flag-title">🚩 Красный флаг:</div>
+                                <div class="red-flag-text">Весь пользовательский трафик проходит через защитный сервис, но атакующий может найти реальный IP приложения и обратиться к нему напрямую.</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Вопрос 6 -->
+            <div class="question-block">
+                <div class="question-number">Вопрос 6</div>
+                <div class="question-text">Видят ли разные эшелоны защиты одного и того же клиента?</div>
+                <div class="answer-options">
+                    <label class="answer-option">
+                        <input type="radio" name="q6" value="2">
+                        <div class="answer-content">
+                            <div class="answer-label">2 балла</div>
+                            <div class="answer-description">Порядок прохождения трафика описан; определено, где завершается TLS; реальный адрес и идентификаторы клиента передаются доверенным способом; события разных эшелонов можно сопоставить; понятно, какая система принимает решение в каждом сценарии.</div>
+                        </div>
+                    </label>
+                    <label class="answer-option">
+                        <input type="radio" name="q6" value="1">
+                        <div class="answer-content">
+                            <div class="answer-label">1 балл</div>
+                            <div class="answer-description">Средства работают совместно, но корреляция частично ручная либо отдельные системы видят вместо клиента адрес предыдущего proxy/балансировщика.</div>
+                        </div>
+                    </label>
+                    <label class="answer-option">
+                        <input type="radio" name="q6" value="0">
+                        <div class="answer-content">
+                            <div class="answer-label">0 баллов</div>
+                            <div class="answer-description">Каждый эшелон работает фактически независимо и использует собственную картину происходящего.</div>
+                            <div class="red-flag">
+                                <div class="red-flag-title">🚩 Красный флаг:</div>
+                                <div class="red-flag-text">Приложение или WAF считает все запросы пришедшими от нескольких адресов reverse proxy — и обычное ограничение по IP начинает блокировать легитимных пользователей вместе с атакующими. Примечание: клиентские заголовки вроде X-Forwarded-For должны приниматься только от доверенных прокси, иначе атакующий сможет подставлять значение сам.</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Вопрос 7 -->
+            <div class="question-block">
+                <div class="question-number">Вопрос 7</div>
+                <div class="question-text">Знаете ли вы, какой компонент архитектуры закончится первым?</div>
+                <div class="answer-options">
+                    <label class="answer-option">
+                        <input type="radio" name="q7" value="2">
+                        <div class="answer-content">
+                            <div class="answer-label">2 балла</div>
+                            <div class="answer-description">Известны рабочие пороги для интернет-каналов, соединений и сессий, RPS, TLS-операций, балансировщиков, приложений, пулов подключений к БД и других критичных ресурсов; технические пороги сопоставлены с допустимой деградацией бизнес-сервиса.</div>
+                        </div>
+                    </label>
+                    <label class="answer-option">
+                        <input type="radio" name="q7" value="1">
+                        <div class="answer-content">
+                            <div class="answer-label">1 балл</div>
+                            <div class="answer-description">Мониторинг емкости есть, но в основном основан на обычной эксплуатации; поведение всей цепочки под комбинированной нагрузкой не проверялось.</div>
+                        </div>
+                    </label>
+                    <label class="answer-option">
+                        <input type="radio" name="q7" value="0">
+                        <div class="answer-content">
+                            <div class="answer-label">0 баллов</div>
+                            <div class="answer-description">Готовность оценивается по паспортной производительности отдельных устройств или заявленной емкости сервисов.</div>
+                            <div class="red-flag">
+                                <div class="red-flag-title">🚩 Красный флаг:</div>
+                                <div class="red-flag-text">Каждый компонент отдельно имеет «запас х2», но при атаке первым заканчивается вовсе не CPU firewall, а, например, пул подключений приложения к базе.</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Вопрос 8 -->
+            <div class="question-block">
+                <div class="question-number">Вопрос 8</div>
+                <div class="question-text">Что произойдет в первые 15 минут многовекторной атаки?</div>
+                <div class="answer-options">
+                    <label class="answer-option">
+                        <input type="radio" name="q8" value="2">
+                        <div class="answer-content">
+                            <div class="answer-label">2 балла</div>
+                            <div class="answer-description">Определены 24×7-контакты и порядок эскалации; понятно, кто принимает решение об изменении политик и маршрутизации; провайдеры и внутренняя команда знают свои зоны ответственности; есть сценарии действий для разных типов атаки, и они хотя бы периодически проверяются.</div>
+                        </div>
+                    </label>
+                    <label class="answer-option">
+                        <input type="radio" name="q8" value="1">
+                        <div class="answer-content">
+                            <div class="answer-label">1 балл</div>
+                            <div class="answer-description">Контакты и процессы существуют, но совместной тренировки или проверки взаимодействия не проводилось.</div>
+                        </div>
+                    </label>
+                    <label class="answer-option">
+                        <input type="radio" name="q8" value="0">
+                        <div class="answer-content">
+                            <div class="answer-label">0 баллов</div>
+                            <div class="answer-description">Во время инцидента сначала придется выяснять, кто отвечает за канал, кто за приложение, кто связывается с провайдером и кто имеет право менять конфигурацию.</div>
+                            <div class="red-flag">
+                                <div class="red-flag-title">🚩 Красный флаг:</div>
+                                <div class="red-flag-text">Все средства защиты сработали штатно, но время ушло на согласования между командами.</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Кнопка подсчета -->
+            <div class="button-container">
+                <button type="button" class="calculate-btn" id="calculate-btn">Подсчитать баллы</button>
+                <div class="error-message" id="error-message"></div>
+            </div>
+        </form>
+
+        <!-- Результаты -->
+        <div class="results" id="results">
+            <div class="score-display" id="score-display"></div>
+            <div class="advice-title" id="advice-title"></div>
+            <div class="advice-text" id="advice-text"></div>
+            <button type="button" class="reset-btn" id="reset-btn">Попробовать ещё раз</button>
+        </div>
+    </div>
+
+    <script>
+        const adviceData = {
+            high: {
+                title: '13–16 баллов: Архитектура выдерживает любые трудности!',
+                text: 'У вас уже не просто набор отдельных средств защиты: основные эшелоны связаны между собой, зоны ответственности понятны, а критичные сценарии хотя бы частично проверены на практике. Вероятность того, что во время атаки неожиданно обнаружится незакрытый маршрут к инфраструктуре или неподготовленный участок цепочки, заметно ниже.\n\nНо высокий балл не означает, что архитектуру можно считать «законченной». Ее слабые места часто появляются после изменений: запуска нового API, миграции в облако, смены балансировщика, подключения нового провайдера или изменения логики приложения.\n\nНа чем сфокусироваться: найти пункты, где вы поставили не максимальный балл, и проверить именно их. А затем повторять такую оценку после существенных изменений инфраструктуры.'
+            },
+            medium: {
+                title: '8–12 баллов: Защита есть, но атака может пройти между эшелонами',
+                text: 'Скорее всего, большинство необходимых технологий у вас уже присутствует. Проблема в другом: отдельные компоненты могут быть хорошо настроены сами по себе, но не всегда образуют единую устойчивую систему.\n\nВ спокойном режиме такие разрывы почти незаметны. Они проявляются именно под нагрузкой: Anti-DDoS очистил трафик, но приложение не выдержало L7; WAF работает, но к origin можно обратиться напрямую; антибот видит автоматизацию, но не хватает контекста клиента; инфраструктура выдерживает трафик, но команды теряют время на эскалацию.\n\nНа чем сфокусироваться: посмотреть не столько на пункты с нулем, сколько на все ответы «частично». Именно там чаще всего находятся архитектурные разрывы, которые становятся критичными при комбинированной атаке.'
+            },
+            low: {
+                title: '0–7 баллов: Первая серьезная атака станет проверкой архитектуры',
+                text: 'Отдельные средства защиты могут быть установлены и нормально выполнять свои функции, но сейчас трудно заранее предсказать, как поведет себя вся цепочка одновременно под нагрузкой.\n\nГлавный риск здесь даже не в том, что отсутствует какой-то конкретный продукт. Опаснее неизвестность: где находится первое узкое место, можно ли обойти защитный контур, выдержит ли backend корректные, но ресурсоемкие запросы, кто заметит деградацию первым и сколько времени потребуется на реакцию.\n\nПри многовекторной атаке ответы на эти вопросы лучше получить до инцидента, а не во время него.\n\nНа чем сфокусироваться: сначала закрыть архитектурные риски с максимальным влиянием на доступность сервиса — обход защитного контура, исчерпание канала, отсутствие защиты L7 и неясную схему реагирования. После этого уже переходить к более тонкой настройке отдельных эшелонов.'
+            }
+        };
+
+        document.getElementById('calculate-btn').addEventListener('click', function() {
+            // Проверяем, все ли вопросы отвечены
+            const answers = document.querySelectorAll('input[type="radio"]:checked');
+            
+            if (answers.length < 8) {
+                document.getElementById('error-message').textContent = 
+                    '⚠️ Пожалуйста, ответьте на все вопросы перед подсчетом!';
+                return;
+            }
+
+            // Очищаем сообщение об ошибке
+            document.getElementById('error-message').textContent = '';
+
+            // Подсчитываем баллы
+            let totalScore = 0;
+            answers.forEach(answer => {
+                totalScore += parseInt(answer.value);
+            });
+
+            // Выбираем совет исходя из количества баллов
+            let advice;
+            if (totalScore >= 13) {
+                advice = adviceData.high;
+            } else if (totalScore >= 8) {
+                advice = adviceData.medium;
+            } else {
+                advice = adviceData.low;
+            }
+
+            // Показываем результаты
+            document.getElementById('score-display').textContent = totalScore + ' из 16 баллов';
+            document.getElementById('advice-title').textContent = advice.title;
+            document.getElementById('advice-text').textContent = advice.text;
+            document.getElementById('results').classList.add('show');
+
+            // Скролл к результатам
+            setTimeout(() => {
+                document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+        });
+
+        document.getElementById('reset-btn').addEventListener('click', function() {
+            // Очищаем все ответы
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.checked = false;
+            });
+
+            // Скрываем результаты
+            document.getElementById('results').classList.remove('show');
+            document.getElementById('error-message').textContent = '';
+
+            // Скролл к началу
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // Функция для загрузки изображения (опционально)
+        function loadHeaderImage() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const imageUrl = urlParams.get('image');
+            
+            if (imageUrl) {
+                const img = document.getElementById('headerImage');
+                img.src = imageUrl;
+                img.style.display = 'block';
+                document.getElementById('placeholderText').style.display = 'none';
+            }
+        }
+
+        loadHeaderImage();
+    </script>
+</body>
+</html>
